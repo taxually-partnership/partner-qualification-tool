@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Partner Qualification Tool — Taxually</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --navy: #161660;
+  --teal: #5AFAE7;
+  --teal-bg: #E8FDF9;
+  --grey: #4C536B;
+  --lgrey: #F1F7FF;
+  --divider: #D8E4F5;
+  --white: #FFFFFF;
+  --green: #10B981;
+  --green-bg: #D1FAE5;
+  --amber: #F59E0B;
+  --amber-bg: #FEF3C7;
+  --red: #EF4444;
+  --red-bg: #FEE2E2;
+  --indigo: #4F46E5;
+  --indigo-bg: #EEF2FF;
+  --slate-bg: #F1F5F9;
+  --text: #0F172A;
+  --text-secondary: #475569;
+  --text-tertiary: #94A3B8;
+}
+
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #F8FAFC; color: var(--text); font-size: 14px; line-height: 1.5; }
+
+/* ── Layout ── */
+.app { display: grid; grid-template-rows: auto auto 1fr; min-height: 100vh; }
+.header { background: var(--navy); padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; }
+.header-logo { color: var(--teal); font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+.header-title { color: #fff; font-size: 15px; font-weight: 500; }
+.header-date { color: #8899BB; font-size: 12px; }
+
+.tabs-bar { background: var(--white); border-bottom: 1px solid var(--divider); display: flex; padding: 0 28px; overflow-x: auto; gap: 0; }
+.tab { padding: 12px 18px; font-size: 13px; color: var(--text-secondary); cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; transition: color .15s; }
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--navy); border-bottom-color: var(--navy); font-weight: 500; }
+.tab.done::after { content: ' ✓'; color: var(--green); }
+
+.body { display: grid; grid-template-columns: 1fr 280px; gap: 0; align-items: start; }
+.main { padding: 24px 28px; }
+.sidebar { padding: 20px 20px; background: var(--lgrey); border-left: 1px solid var(--divider); position: sticky; top: 0; max-height: 100vh; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+
+/* ── Panes ── */
+.pane { display: none; } .pane.active { display: block; }
+.pane-title { font-size: 16px; font-weight: 600; color: var(--navy); margin-bottom: 4px; }
+.pane-sub { font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; }
+
+/* ── Form ── */
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 16px; }
+.field-label { font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .05em; }
+.field-hint { font-size: 12px; color: var(--text-tertiary); margin-bottom: 4px; }
+.field-prompt { font-size: 13px; color: var(--navy); font-style: italic; margin-bottom: 6px; background: var(--lgrey); padding: 8px 10px; border-radius: 6px; border-left: 3px solid var(--teal); }
+
+select, input[type=text], input[type=number], textarea {
+  padding: 8px 10px; font-size: 13px; border-radius: 7px;
+  border: 1px solid var(--divider); background: var(--white);
+  color: var(--text); width: 100%; outline: none;
+  transition: border-color .15s;
+}
+select:focus, input:focus, textarea:focus { border-color: var(--navy); }
+
+/* ── Multi-select jurisdictions ── */
+.jurisdiction-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; max-height: 280px; overflow-y: auto; border: 1px solid var(--divider); border-radius: 7px; padding: 10px; background: var(--white); }
+.jcheck { display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; padding: 3px 4px; border-radius: 4px; }
+.jcheck:hover { background: var(--lgrey); }
+.jcheck input { width: 14px; height: 14px; accent-color: var(--navy); cursor: pointer; }
+
+/* ── Buttons ── */
+.btn-row { display: flex; gap: 10px; margin-top: 20px; }
+.btn { padding: 8px 18px; border-radius: 7px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid var(--divider); background: var(--white); color: var(--text); transition: background .15s; }
+.btn:hover { background: var(--lgrey); }
+.btn-primary { background: var(--navy); color: var(--white); border-color: var(--navy); }
+.btn-primary:hover { background: #0F0F4D; }
+.btn-export { background: var(--green-bg); color: var(--green); border-color: var(--green); }
+.btn-export:hover { background: #A7F3D0; }
+
+/* ── Sidebar cards ── */
+.s-card { background: var(--white); border-radius: 8px; border: 1px solid var(--divider); padding: 12px 14px; }
+.s-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--text-tertiary); margin-bottom: 6px; }
+.s-value { font-size: 22px; font-weight: 600; color: var(--navy); }
+.s-sub { font-size: 11px; color: var(--text-tertiary); margin-top: 2px; }
+.s-formula { font-size: 11px; color: var(--text-tertiary); margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--divider); line-height: 1.5; }
+
+.qual-badge { border-radius: 7px; padding: 8px 12px; font-size: 13px; font-weight: 500; }
+.qual-yes { background: var(--green-bg); color: var(--green); }
+.qual-no { background: var(--red-bg); color: var(--red); }
+.qual-pending { background: var(--slate-bg); color: var(--text-secondary); }
+
+.tier-badge { border-radius: 7px; padding: 8px 12px; font-size: 13px; font-weight: 500; }
+.t1 { background: var(--teal-bg); color: #0F766E; }
+.t2 { background: var(--indigo-bg); color: var(--indigo); }
+.t3 { background: var(--amber-bg); color: #92400E; }
+.t4 { background: var(--lgrey); color: var(--text-secondary); }
+.t5 { background: var(--slate-bg); color: var(--text-tertiary); }
+
+/* ── IPP scorecard ── */
+.ipp-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--divider); font-size: 12px; }
+.ipp-row:last-child { border: none; }
+.ipp-dim { color: var(--text-secondary); flex: 1; }
+.chip { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.chip-3 { background: var(--green-bg); color: var(--green); }
+.chip-2 { background: var(--amber-bg); color: var(--amber); }
+.chip-1 { background: var(--red-bg); color: var(--red); }
+.chip-0 { background: var(--slate-bg); color: var(--text-tertiary); }
+
+/* ── IPP detail table ── */
+.ipp-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.ipp-table th { text-align: left; padding: 8px 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--text-secondary); border-bottom: 2px solid var(--divider); }
+.ipp-table td { padding: 9px 12px; border-bottom: 1px solid var(--divider); vertical-align: middle; }
+.ipp-table tr:last-child td { border: none; }
+.req-tag { font-size: 10px; background: var(--red-bg); color: var(--red); border-radius: 20px; padding: 1px 6px; margin-left: 6px; }
+
+/* ── Pricing calculator ── */
+.price-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.price-table th { text-align: left; padding: 8px 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--text-secondary); border-bottom: 2px solid var(--divider); }
+.price-table td { padding: 7px 12px; border-bottom: 1px solid var(--divider); }
+.price-table tr:last-child td { border: none; }
+.price-table tfoot td { font-weight: 600; background: var(--lgrey); border-top: 2px solid var(--divider); }
+.price-total { font-size: 22px; font-weight: 700; color: var(--navy); }
+
+.section-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--text-tertiary); margin: 20px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--divider); }
+
+/* ── Summary / print ── */
+.summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+.summary-card { background: var(--lgrey); border-radius: 8px; padding: 12px 14px; border: 1px solid var(--divider); }
+.summary-label { font-size: 11px; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
+.summary-val { font-size: 18px; font-weight: 600; color: var(--navy); }
+.summary-sub { font-size: 11px; color: var(--text-tertiary); }
+
+@media print {
+  .tabs-bar, .btn-row, .sidebar .btn-row { display: none; }
+  .body { grid-template-columns: 1fr; }
+  .sidebar { position: static; max-height: none; border: none; background: none; }
+  .pane { display: block !important; margin-bottom: 32px; }
+  .pane-title { page-break-before: always; }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <div class="header">
+    <div class="header-logo">Taxually</div>
+    <div class="header-title">Partner Qualification Tool</div>
+    <div class="header-date" id="hdr-date"></div>
+  </div>
+
+  <div class="tabs-bar">
+    <div class="tab active" onclick="goTab(0)">1. Partner info</div>
+    <div class="tab" onclick="goTab(1)">2. Discovery</div>
+    <div class="tab" onclick="goTab(2)">3. IPP Scorecard</div>
+    <div class="tab" onclick="goTab(3)">4. Pricing calculator</div>
+    <div class="tab" onclick="goTab(4)">5. Summary</div>
+  </div>
+
+  <div class="body">
+    <div class="main">
+
+      <!-- ── TAB 0: Partner info ── -->
+      <div class="pane active" id="pane-0">
+        <div class="pane-title">Partner information</div>
+        <div class="pane-sub">Basic details — fill in at outreach or before the meeting.</div>
+
+        <div class="grid2">
+          <div class="field">
+            <div class="field-label">Company name</div>
+            <input type="text" id="p-name" placeholder="e.g. Acme Logistics" oninput="upd()">
+          </div>
+          <div class="field">
+            <div class="field-label">PDM</div>
+            <input type="text" id="p-pdm" placeholder="Your name" oninput="upd()">
+          </div>
+          <div class="field">
+            <div class="field-label">Segment</div>
+            <select id="p-seg" onchange="upd()">
+              <option value="">— select —</option>
+              <option value="agencies">Agencies & Consultancies</option>
+              <option value="3pl">3PL / Logistics</option>
+              <option value="cfos">Fractional CFOs</option>
+              <option value="freight">Freight Forwarding</option>
+              <option value="accountants">Accountants</option>
+              <option value="marketplaces">Marketplaces</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="field">
+            <div class="field-label">Vertical</div>
+            <select id="p-vert" onchange="upd()">
+              <option value="">— select —</option>
+              <option value="physical">Physical Goods</option>
+              <option value="digital">Digital Goods</option>
+              <option value="both">Both</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Notes</div>
+          <textarea id="p-notes" rows="3" placeholder="Any context about this partner..." oninput="upd()"></textarea>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="goTab(1)">Discovery questions →</button>
+        </div>
+      </div>
+
+      <!-- ── TAB 1: Discovery ── -->
+      <div class="pane" id="pane-1">
+        <div class="pane-title">Discovery questions</div>
+        <div class="pane-sub">Ask these conversationally during the meeting. Select the response that best matches what you hear. These map directly to the HubSpot fields you'll fill in after.</div>
+
+        <div class="field">
+          <div class="field-label">1. ICP match <span style="color:var(--red);font-size:10px;margin-left:4px">KEY — prioritisation signal</span></div>
+          <div class="field-prompt">"Tell me more about the type of clients you work with — are they mostly selling domestically or across borders?"</div>
+          <div class="field-hint">Listen for: cross-border, EU/UK, Amazon/Shopify sellers, VAT mentions</div>
+          <select id="d-icp" onchange="upd()">
+            <option value="">— record response —</option>
+            <option value="3">Majority are cross-border e-commerce sellers (EU/UK/US)</option>
+            <option value="2">Mixed — some cross-border, some domestic</option>
+            <option value="1">Mostly domestic businesses, little cross-border activity</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <div class="field-label">2. Client base size (TAM)</div>
+          <div class="field-prompt">"How many active clients or merchants would you say you're working with right now?"</div>
+          <div class="field-hint">Get a number — select the matching range below</div>
+          <select id="d-size" onchange="upd()">
+            <option value="">— record response —</option>
+            <option value="5" data-mid="5001">5,001+ clients</option>
+            <option value="4" data-mid="3000">1,001–5,000 clients</option>
+            <option value="3" data-mid="625">251–1,000 clients</option>
+            <option value="2" data-mid="175">101–250 clients</option>
+            <option value="1" data-mid="50">0–100 clients</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <div class="field-label">3. VAT / compliance fit</div>
+          <div class="field-prompt">"Do your clients ever bring up VAT or compliance headaches, especially when expanding into Europe?"</div>
+          <div class="field-hint">Follow up: "Which jurisdictions do they typically need to register in?"</div>
+          <select id="d-vat" onchange="upd()">
+            <option value="">— record response —</option>
+            <option value="3">Yes — clients actively face VAT obligations today</option>
+            <option value="2">Sometimes — some cross-border, ad-hoc compliance</option>
+            <option value="1">Rarely — mostly domestic, no real VAT need</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <div class="field-label">4. Referral capacity (monthly) <span style="color:var(--red);font-size:10px;margin-left:4px">KEY — drives revenue projection</span></div>
+          <div class="field-prompt">"In terms of introductions — does that happen naturally in your network, or is it more structured?"</div>
+          <div class="field-hint">Follow up: "If this makes sense for both sides — what would a realistic volume of referrals look like on your end?"</div>
+          <select id="d-refs" onchange="upd()">
+            <option value="">— record response —</option>
+            <option value="31" data-mid="35">31+ / month</option>
+            <option value="16" data-mid="23">16–30 / month</option>
+            <option value="6"  data-mid="10">6–15 / month</option>
+            <option value="1"  data-mid="2">0–5 / month</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <div class="field-label">5. Average deal size</div>
+          <div class="field-prompt">"Thinking about a typical client of yours that would need VAT registration — what kind of package would they usually go for?"</div>
+          <div class="field-hint">Use the pricing calculator (tab 4) to build a scenario and come back to fill this in. Or estimate based on conversation.</div>
+          <select id="d-deal" onchange="upd()">
+            <option value="">— select or use pricing calculator —</option>
+            <option value="12000">€10K+</option>
+            <option value="7500">€5K–€10K</option>
+            <option value="3500">€2K–€5K</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <div class="field-label">6. Competitive landscape</div>
+          <div class="field-prompt">"Are you currently working with any other VAT or compliance providers for these referrals?"</div>
+          <div class="field-hint">If yes: "How's that relationship going?"</div>
+          <select id="d-comp" onchange="upd()">
+            <option value="">— record response —</option>
+            <option value="3">No competitor partnership in place</option>
+            <option value="2">Has a competitor — unsatisfied / poor relationship</option>
+            <option value="1">Active and satisfied competitor partnership</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Forecasting (HubSpot field)</div>
+          <div class="field-hint">Your assessment of how likely this partnership is to generate deals — maps to the existing HubSpot Forecasting field</div>
+          <select id="d-activ" onchange="upd()">
+            <option value="">— assess —</option>
+            <option value="Commit">Commit — 90%+ likelihood</option>
+            <option value="Hot">Hot — 70–89% likelihood</option>
+            <option value="Stretch">Stretch — 50–69% likelihood</option>
+            <option value="Develop">Develop — 0–49% likelihood</option>
+          </select>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn" onclick="goTab(0)">← Back</button>
+          <button class="btn btn-primary" onclick="goTab(2)">IPP Scorecard →</button>
+        </div>
+      </div>
+
+      <!-- ── TAB 2: IPP Scorecard ── -->
+      <div class="pane" id="pane-2">
+        <div class="pane-title">IPP Scorecard</div>
+        <div class="pane-sub">Auto-filled from your discovery responses. IPP is a <strong>prioritisation signal</strong>, not a gate. The only hard no is a partner whose clients are purely domestic with no VAT need at all.</div>
+
+        <table class="ipp-table">
+          <thead>
+            <tr>
+              <th>Dimension</th>
+              <th>Score</th>
+              <th>Criteria</th>
+              <th>Weighted points</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="ipp-tbody"></tbody>
+        </table>
+
+        <div id="ipp-qual-banner" style="margin-top:16px;border-radius:8px;padding:12px 16px;font-size:14px;font-weight:500;background:var(--slate-bg);color:var(--text-secondary)">Complete the discovery section to see the qualification result.</div>
+
+        <div class="section-label" style="margin-top:24px">Tier assignment</div>
+        <div id="ipp-tier-block"></div>
+
+        <div class="section-label" style="margin-top:24px">Tier framework reference</div>
+        <table class="ipp-table">
+          <thead><tr><th>Tier</th><th>Name</th><th>Revenue</th><th>IPP dims 1 & 4</th><th>Referrals/mo</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Tier 1</strong></td><td>Strategic</td><td>≥ €100K/yr</td><td>High priority</td><td>≥ 16/mo</td></tr>
+            <tr><td><strong>Tier 2</strong></td><td>Growth</td><td>€50K–€100K/yr</td><td>High or Medium</td><td>6–30/mo</td></tr>
+            <tr><td><strong>Tier 3</strong></td><td>Standard</td><td>€10K–€50K/yr</td><td>Any (excl. incompat.)</td><td>Any</td></tr>
+            <tr><td><strong>Tier 4</strong></td><td>Base</td><td>< €10K/yr or no data</td><td>Not yet scored</td><td>—</td></tr>
+          </tbody>
+        </table>
+
+        <div class="btn-row">
+          <button class="btn" onclick="goTab(1)">← Back</button>
+          <button class="btn btn-primary" onclick="goTab(3)">Pricing calculator →</button>
+        </div>
+      </div>
+
+      <!-- ── TAB 3: Pricing calculator ── -->
+      <div class="pane" id="pane-3">
+        <div class="pane-title">Pricing calculator</div>
+        <div class="pane-sub">Estimate the cost for a client scenario the partner brings up. Select the jurisdictions and services.</div>
+
+        <div class="section-label">Select jurisdictions</div>
+        <div class="field-hint" style="margin-bottom:10px">Select all countries the client will need VAT registration in.</div>
+        <div class="jurisdiction-grid" id="juris-grid"></div>
+
+        <div class="section-label" style="margin-top:20px">Additional services</div>
+        <div class="grid2">
+          <label class="jcheck"><input type="checkbox" id="svc-oss" onchange="calcPrice()"> OSS registration + annual filings (€1,450)</label>
+          <label class="jcheck"><input type="checkbox" id="svc-ioss" onchange="calcPrice()"> IOSS registration + annual filings (€1,750)</label>
+          <label class="jcheck"><input type="checkbox" id="svc-eori" onchange="calcPrice()"> EORI (€150)</label>
+          <label class="jcheck"><input type="checkbox" id="svc-intrastat" onchange="calcPrice()"> Intrastat (€500/yr)</label>
+          <label class="jcheck"><input type="checkbox" id="svc-us" onchange="calcPrice()"> US State Registration + Filings (€1,100)</label>
+          <label class="jcheck"><input type="checkbox" id="svc-nexus" onchange="calcPrice()"> US Nexus Study (€2,000)</label>
+        </div>
+
+        <div class="section-label" style="margin-top:20px">Cost breakdown</div>
+        <table class="price-table" id="price-table">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th style="text-align:right">Registration</th>
+              <th style="text-align:right">Annual filings</th>
+              <th style="text-align:right">Fiscal rep</th>
+              <th style="text-align:right">Total yr 1</th>
+            </tr>
+          </thead>
+          <tbody id="price-tbody"><tr><td colspan="5" style="color:var(--text-tertiary);padding:16px 12px">Select jurisdictions above to see the cost breakdown.</td></tr></tbody>
+          <tfoot>
+            <tr>
+              <td><strong>TOTAL</strong></td>
+              <td style="text-align:right" id="pt-reg">—</td>
+              <td style="text-align:right" id="pt-fil">—</td>
+              <td style="text-align:right" id="pt-rep">—</td>
+              <td style="text-align:right"><span class="price-total" id="pt-total">—</span></td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <div id="price-note" style="margin-top:12px;font-size:12px;color:var(--text-tertiary);border-left:3px solid var(--teal);padding-left:10px;line-height:1.6"></div>
+
+        <div class="btn-row">
+          <button class="btn" onclick="goTab(2)">← Back</button>
+          <button class="btn btn-primary" onclick="goTab(4)">Summary →</button>
+        </div>
+      </div>
+
+      <!-- ── TAB 4: Summary ── -->
+      <div class="pane" id="pane-4">
+        <div class="pane-title">Qualification summary</div>
+        <div class="pane-sub">Full overview for this partner session. Print or save as PDF to attach to the HubSpot deal.</div>
+
+        <div class="summary-grid" id="sum-grid"></div>
+        <div class="section-label">IPP scorecard</div>
+        <div id="sum-ipp"></div>
+        <div class="section-label" style="margin-top:20px">HubSpot fields to update</div>
+        <table class="ipp-table" id="sum-hs"></table>
+        <div class="section-label" style="margin-top:20px">Pricing scenario</div>
+        <div id="sum-price"></div>
+
+        <div class="btn-row">
+          <button class="btn" onclick="goTab(3)">← Back</button>
+          <button class="btn btn-export" onclick="window.print()">Print / Save as PDF</button>
+        </div>
+      </div>
+
+    </div><!-- /main -->
+
+    <!-- ── SIDEBAR ── -->
+    <div class="sidebar">
+      <div class="s-label">Annual revenue potential</div>
+      <div class="s-card">
+        <div class="s-value" id="sb-rev">—</div>
+        <div class="s-sub">projected / year</div>
+        <div class="s-formula" id="sb-formula"></div>
+      </div>
+
+      <div class="s-label">IPP qualification</div>
+      <div id="sb-qual" class="qual-badge qual-pending">Complete discovery</div>
+
+      <div class="s-label">Suggested tier</div>
+      <div id="sb-tier" class="tier-badge t4">Tier 4 — Prospect</div>
+
+      <div class="s-label">IPP scorecard</div>
+      <div id="sb-ipp"></div>
+
+      <div style="margin-top:4px">
+        <div class="s-label">Client pricing estimate</div>
+        <div class="s-card">
+          <div class="s-value" id="sb-price">—</div>
+          <div class="s-sub" id="sb-price-sub">select jurisdictions in tab 4</div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="goTab(4)">View summary →</button>
+    </div>
+
+  </div><!-- /body -->
+</div><!-- /app -->
+
+<script>
+// ── Pricing data ──────────────────────────────────────────────
+const JURISDICTIONS = [
+  {name:'United Kingdom', reg:250, fil:850, rep:null},
+  {name:'Germany', reg:250, fil:850, rep:null},
+  {name:'France', reg:250, fil:850, rep:650},
+  {name:'Italy', reg:250, fil:850, rep:650},
+  {name:'Spain', reg:250, fil:850, rep:650},
+  {name:'Poland', reg:250, fil:850, rep:650},
+  {name:'Netherlands', reg:250, fil:850, rep:null},
+  {name:'Belgium', reg:500, fil:850, rep:1000},
+  {name:'Austria', reg:250, fil:850, rep:1000},
+  {name:'Sweden', reg:500, fil:850, rep:650},
+  {name:'Czech Republic', reg:250, fil:850, rep:null},
+  {name:'Romania', reg:500, fil:850, rep:1400},
+  {name:'Hungary', reg:500, fil:3000, rep:1500},
+  {name:'Portugal', reg:1000, fil:1500, rep:1500},
+  {name:'Greece', reg:500, fil:850, rep:1500},
+  {name:'Denmark', reg:250, fil:850, rep:1500},
+  {name:'Finland', reg:250, fil:850, rep:1000},
+  {name:'Ireland', reg:250, fil:850, rep:null},
+  {name:'Slovakia', reg:250, fil:850, rep:null},
+  {name:'Croatia', reg:250, fil:850, rep:650},
+  {name:'Bulgaria', reg:500, fil:3000, rep:3000},
+  {name:'Slovenia', reg:500, fil:850, rep:1500},
+  {name:'Lithuania', reg:250, fil:850, rep:650},
+  {name:'Latvia', reg:250, fil:850, rep:null},
+  {name:'Luxembourg', reg:250, fil:850, rep:null},
+  {name:'Estonia', reg:250, fil:850, rep:650},
+  {name:'Cyprus', reg:250, fil:850, rep:650},
+  {name:'Malta', reg:250, fil:850, rep:null},
+  {name:'Norway', reg:1000, fil:850, rep:2500},
+  {name:'Switzerland', reg:500, fil:850, rep:1000},
+  {name:'United Arab Emirates', reg:500, fil:1200, rep:null},
+  {name:'United States', reg:300, fil:800, rep:null},
+  {name:'Canada', reg:300, fil:1400, rep:null},
+  {name:'Australia', reg:1000, fil:2000, rep:null},
+  {name:'New Zealand', reg:500, fil:1000, rep:null},
+  {name:'Singapore', reg:1000, fil:2000, rep:1000},
+  {name:'Saudi Arabia', reg:500, fil:2000, rep:1000},
+  {name:'South Africa', reg:500, fil:1000, rep:null},
+];
+
+const CONV = {agencies:.69,'3pl':.265,cfos:.765,freight:.37,accountants:.31,marketplaces:.13,other:.30};
+const SEGL = {agencies:'Agencies & Consultancies','3pl':'3PL / Logistics',cfos:'Fractional CFOs',freight:'Freight Forwarding',accountants:'Accountants',marketplaces:'Marketplaces',other:'Other'};
+const TIER_INFO = [
+  null,
+  {label:'Tier 1 — Strategic', cls:'t1'},
+  {label:'Tier 2 — Growth',    cls:'t2'},
+  {label:'Tier 3 — Standard',  cls:'t3'},
+  {label:'Tier 4 — Base',      cls:'t4'},
+];
+const IPP_L = {1:'1 — Poor fit',2:'2 — Partial fit',3:'3 — Strong fit'};
+
+// ── Build jurisdiction checkboxes ────────────────────────────
+function buildJurisGrid() {
+  const grid = document.getElementById('juris-grid');
+  JURISDICTIONS.forEach((j,i) => {
+    const label = document.createElement('label');
+    label.className = 'jcheck';
+    label.innerHTML = `<input type="checkbox" id="j-${i}" onchange="calcPrice()"> ${j.name}`;
+    grid.appendChild(label);
+  });
+}
+
+// ── Core data getter ─────────────────────────────────────────
+function g(id){ return document.getElementById(id); }
+function gv(id){ const el=g(id); return el?el.value:''; }
+
+function getData() {
+  const refsEl = g('d-refs');
+  const refsMid = refsEl ? parseFloat(refsEl.selectedOptions[0]?.dataset?.mid || 0) : 0;
+  const sizeEl = g('d-size');
+  const sizeScore = parseInt(gv('d-size')) || 0;
+  return {
+    name:    g('p-name').value.trim(),
+    pdm:     g('p-pdm').value.trim(),
+    seg:     gv('p-seg'),
+    vert:    gv('p-vert'),
+    notes:   g('p-notes').value.trim(),
+    icp:     parseInt(gv('d-icp')) || 0,
+    size:    sizeScore,
+    vat:     parseInt(gv('d-vat')) || 0,
+    drefs:   parseInt(gv('d-refs')) || 0,
+    refsMid: refsMid,
+    deal:    parseFloat(gv('d-deal')) || 0,
+    comp:    parseInt(gv('d-comp')) || 0,
+    activ:   gv('d-activ'),
+  };
+}
+
+function calcRev(d) {
+  if(!d.seg || !d.refsMid || !d.deal) return null;
+  const conv = CONV[d.seg] || 0.30;
+  return { annual: Math.round(d.refsMid * d.deal * conv * 12), conv, refs: d.refsMid, deal: d.deal };
+}
+
+function calcIPPDims(d) {
+  // size: 5 buckets → 3-point scale
+  const sizeScore = d.size >= 4 ? 3 : d.size === 3 ? 2 : d.size > 0 ? 1 : 0;
+  // refs: 31+ = 3, 16-30 = 3, 6-15 = 2, 0-5 = 1
+  const refsScore = d.drefs >= 16 ? 3 : d.drefs >= 6 ? 2 : d.drefs >= 1 ? 1 : 0;
+  return [
+    {dim:'1. ICP Match',         score: d.icp,     weight: 3, note:'Cross-border majority = 3 · mixed = 2 · domestic = 1'},
+    {dim:'2. Client Base Size',  score: sizeScore, weight: 1, note:'1K+ = 3 · 251–1K = 2 · < 250 = 1'},
+    {dim:'3. VAT / Compliance',  score: d.vat,     weight: 2, note:'Active VAT need today = 3'},
+    {dim:'4. Referral Capacity', score: refsScore, weight: 3, note:'≥ 16/mo = 3 · 6–15/mo = 2 · 0–5/mo = 1'},
+    {dim:'5. Competitive',       score: d.comp,    weight: 1, note:'No competitor = 3'},
+  ];
+}
+
+function calcIPPResult(dims) {
+  // Weighted score: each dim score × weight. Max = (3+1+2+3+1) × 3 = 30
+  const filled = dims.filter(d => d.score > 0);
+  if(filled.length === 0) return null;
+  const weighted = dims.reduce((sum, d) => sum + d.score * d.weight, 0);
+  const maxScore = dims.reduce((sum, d) => sum + 3 * d.weight, 0); // 30
+  const pct = weighted / maxScore;
+
+  // Hard no: ICP = 1 AND VAT = 1 (purely domestic, no VAT need)
+  const icpDim = dims[0]; const vatDim = dims[2];
+  if(icpDim.score === 1 && vatDim.score === 1) return 'incompatible';
+  // Not enough data yet
+  if(filled.length < 2) return null;
+  if(pct >= 0.75) return 'high';
+  if(pct >= 0.50) return 'medium';
+  return 'low';
+}
+
+function calcQualified(d) {
+  const dims = calcIPPDims(d);
+  return calcIPPResult(dims);
+}
+
+function calcTier(d, rev, ippResult) {
+  if(!rev || rev.annual === 0) return 4;
+  if(ippResult === 'incompatible') return 4;
+  if(rev.annual >= 100000) return 1;
+  if(rev.annual >= 50000)  return 2;
+  if(rev.annual >= 10000)  return 3;
+  return 4;
+}
+
+function chip(s) {
+  const labels=['','Poor fit','Partial fit','Strong fit'];
+  if(!s) return '<span class="chip chip-0">—</span>';
+  return `<span class="chip chip-${s}">${s} · ${labels[s]}</span>`;
+}
+
+function fmt(n){ return n?'€'+n.toLocaleString():'—'; }
+
+// ── Pricing calculator ───────────────────────────────────────
+function calcPrice() {
+  const selected = JURISDICTIONS.filter((_,i)=>g(`j-${i}`)?.checked);
+  const tbody = g('price-tbody');
+
+  let totReg=0, totFil=0, totRep=0;
+  const rows = [];
+
+  selected.forEach(j=>{
+    const r=j.reg||0, f=j.fil||0, rep=j.rep||0;
+    const yr1 = r+f+rep;
+    totReg+=r; totFil+=f; totRep+=rep;
+    rows.push(`<tr>
+      <td>${j.name}</td>
+      <td style="text-align:right">${fmt(r)}</td>
+      <td style="text-align:right">${fmt(f)}</td>
+      <td style="text-align:right">${j.rep===null?'<span style="color:var(--text-tertiary)">N/A</span>':fmt(rep)}</td>
+      <td style="text-align:right"><strong>${fmt(yr1)}</strong></td>
+    </tr>`);
+  });
+
+  // Additional services
+  let addons = 0, addonLines = [];
+  if(g('svc-oss')?.checked)      { addons+=1450; addonLines.push({n:'OSS reg + filings',v:1450}); }
+  if(g('svc-ioss')?.checked)     { addons+=1750; addonLines.push({n:'IOSS reg + filings',v:1750}); }
+  if(g('svc-eori')?.checked)     { addons+=150;  addonLines.push({n:'EORI',v:150}); }
+  if(g('svc-intrastat')?.checked){ addons+=500;  addonLines.push({n:'Intrastat',v:500}); }
+  if(g('svc-us')?.checked)       { addons+=1100; addonLines.push({n:'US State Reg + Filings',v:1100}); }
+  if(g('svc-nexus')?.checked)    { addons+=2000; addonLines.push({n:'US Nexus Study',v:2000}); }
+
+  addonLines.forEach(a=>{
+    rows.push(`<tr style="background:var(--lgrey)"><td>${a.n}</td><td colspan="3" style="text-align:right;color:var(--text-secondary)">add-on</td><td style="text-align:right"><strong>${fmt(a.v)}</strong></td></tr>`);
+  });
+
+  if(rows.length===0){
+    tbody.innerHTML='<tr><td colspan="5" style="color:var(--text-tertiary);padding:16px 12px">Select jurisdictions above to see the cost breakdown.</td></tr>';
+    g('pt-reg').textContent=g('pt-fil').textContent=g('pt-rep').textContent=g('pt-total').textContent='—';
+    g('price-note').textContent='';
+    g('sb-price').textContent='—'; g('sb-price-sub').textContent='select jurisdictions in tab 4';
+    return;
+  }
+
+  tbody.innerHTML=rows.join('');
+  const grandTotal = totReg+totFil+totRep+addons;
+  g('pt-reg').textContent=fmt(totReg);
+  g('pt-fil').textContent=fmt(totFil);
+  g('pt-rep').textContent=fmt(totRep);
+  g('pt-total').textContent=fmt(grandTotal);
+
+  const repCount = selected.filter(j=>j.rep!==null&&j.rep>0).length;
+  let note = `Prices shown are standard rates for Year 1. Annual filings are recurring. Fiscal representation applies in ${repCount} of the selected jurisdiction${repCount!==1?'s':''}.`;
+  if(selected.some(j=>['Hungary','Bulgaria'].includes(j.name))) note += ' Note: Hungary and Bulgaria have higher filing costs (€3,000/yr).';
+  g('price-note').textContent=note;
+  g('sb-price').textContent=fmt(grandTotal);
+  g('sb-price-sub').textContent=`${selected.length} jurisdiction${selected.length!==1?'s':''}${addonLines.length?' + '+addonLines.length+' add-on':''}`;
+
+  // Auto-suggest average deal size in discovery tab based on pricing result
+  const dealEl = g('d-deal');
+  if(dealEl && grandTotal > 0) {
+    const suggested = grandTotal >= 10000 ? '12000' : grandTotal >= 5000 ? '7500' : '3500';
+    if(!dealEl.value) {
+      dealEl.value = suggested;
+      dealEl.style.borderColor = 'var(--teal)';
+      dealEl.title = `Auto-suggested from pricing calculator: ${fmt(grandTotal)} total → ${dealEl.options[dealEl.selectedIndex].text}`;
+      upd();
+    }
+  }
+}
+
+// ── Main update function ─────────────────────────────────────
+function upd() {
+  const d = getData();
+  const rev = calcRev(d);
+  const dims = calcIPPDims(d);
+  const ippResult = calcIPPResult(dims);
+  const tier = calcTier(d, rev, ippResult);
+
+  // Weighted score for display
+  const weighted = dims.reduce((s, dim) => s + dim.score * dim.weight, 0);
+  const maxScore = dims.reduce((s, dim) => s + 3 * dim.weight, 0);
+  const scorePct = maxScore > 0 ? Math.round(weighted / maxScore * 100) : 0;
+
+  // Sidebar: revenue
+  if(rev){
+    g('sb-rev').textContent = '€'+rev.annual.toLocaleString();
+    g('sb-formula').textContent = `${rev.refs} refs/mo × €${rev.deal.toLocaleString()} × ${Math.round(rev.conv*100)}% conv (${SEGL[d.seg]||''} historical) × 12 months`;
+  } else {
+    g('sb-rev').textContent='—';
+    g('sb-formula').textContent='Fill in segment, referral capacity & deal size to calculate.';
+  }
+
+  // Sidebar: IPP badge
+  const qualEl = g('sb-qual');
+  if(ippResult===null){ qualEl.className='qual-badge qual-pending'; qualEl.textContent='Complete discovery'; }
+  else if(ippResult==='high'){ qualEl.className='qual-badge qual-yes'; qualEl.textContent=`✓ High priority · ${scorePct}% weighted score`; }
+  else if(ippResult==='medium'){ qualEl.className='qual-badge'; qualEl.style.cssText='background:var(--amber-bg);color:#92400E;border-radius:8px;padding:8px 12px;font-size:13px;font-weight:500'; qualEl.textContent=`△ Medium priority · ${scorePct}% weighted score`; }
+  else if(ippResult==='low'){ qualEl.className='qual-badge'; qualEl.style.cssText='background:var(--amber-bg);color:#92400E;border-radius:8px;padding:8px 12px;font-size:13px;font-weight:500'; qualEl.textContent=`△ Low priority · ${scorePct}% weighted score`; }
+  else{ qualEl.className='qual-badge qual-no'; qualEl.textContent='✗ Likely incompatible (domestic-only)'; }
+
+  // Sidebar: tier
+  const ti = TIER_INFO[tier]||TIER_INFO[4];
+  const tierEl = g('sb-tier');
+  tierEl.className='tier-badge '+ti.cls;
+  tierEl.textContent=ti.label;
+
+  // Sidebar: IPP mini-scorecard
+  g('sb-ipp').innerHTML = dims.map(dim=>`
+    <div class="ipp-row">
+      <span class="ipp-dim">${dim.dim} <span style="color:var(--text-tertiary);font-size:10px">×${dim.weight}</span></span>
+      ${chip(dim.score)}
+    </div>`).join('');
+
+  // Tab 2: IPP table
+  const tbody = g('ipp-tbody');
+  if(tbody){
+    tbody.innerHTML = dims.map(dim=>{
+      const weighted_contrib = dim.score * dim.weight;
+      const max_contrib = 3 * dim.weight;
+      const statusText = dim.score===3?'<span style="color:var(--green)">✓ strong</span>':dim.score===2?'<span style="color:var(--amber)">○ partial</span>':dim.score===1?'<span style="color:var(--red)">△ weak</span>':'<span style="color:var(--text-tertiary)">—</span>';
+      return `<tr>
+        <td>${dim.dim}</td>
+        <td>${chip(dim.score)}</td>
+        <td style="color:var(--text-tertiary);font-size:12px">${dim.note}</td>
+        <td style="font-size:12px;color:var(--text-secondary)">×${dim.weight} weight = ${dim.score?weighted_contrib+'/'+max_contrib:'—'}</td>
+        <td>${statusText}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // Tab 2: qualification banner
+  const banner = g('ipp-qual-banner');
+  if(banner){
+    const scoreDisplay = dims.some(d=>d.score>0) ? ` (${scorePct}% weighted score — ${weighted}/${maxScore} points)` : '';
+    if(ippResult===null){ banner.style.cssText='margin-top:16px;border-radius:8px;padding:12px 16px;font-size:14px;font-weight:500;background:var(--slate-bg);color:var(--text-secondary)'; banner.textContent='Complete the discovery section to see the IPP result.'; }
+    else if(ippResult==='high'){ banner.style.cssText='margin-top:16px;border-radius:8px;padding:12px 16px;font-size:14px;font-weight:500;background:var(--green-bg);color:var(--green)'; banner.textContent=`✓ High IPP priority${scoreDisplay} — Strong fit. Prioritise for onboarding.`; }
+    else if(ippResult==='medium'){ banner.style.cssText='margin-top:16px;border-radius:8px;padding:12px 16px;font-size:14px;font-weight:500;background:var(--amber-bg);color:#92400E'; banner.textContent=`△ Medium IPP priority${scoreDisplay} — Good potential. Can become active, lower priority vs high-IPP partners.`; }
+    else if(ippResult==='low'){ banner.style.cssText='margin-top:16px;border-radius:8px;padding:12px 16px;font-size:14px;font-weight:500;background:var(--amber-bg);color:#92400E'; banner.textContent=`△ Low IPP priority${scoreDisplay} — Weak fit on key dimensions. Nurture only.`; }
+    else{ banner.style.cssText='margin-top:16px;border-radius:8px;padding:12px 16px;font-size:14px;font-weight:500;background:var(--red-bg);color:var(--red)'; banner.textContent='✗ Likely incompatible — Clients appear purely domestic with no VAT need. Little basis for collaboration.'; }
+  }
+
+  // Tab 2: tier block
+  const tierBlock = g('ipp-tier-block');
+  if(tierBlock){
+    const ti2 = TIER_INFO[tier];
+    const tierDesc = {
+      1:'Projected revenue qualifies as Strategic. Flag for priority onboarding and co-selling.',
+      2:'Projected revenue places this partner in Active tier. Review after 2 qualifying quarters.',
+      3:'New partner — enters as Developing. Promote after 2 qualifying quarters.',
+      4:'Revenue projection not yet available. Complete discovery to assign tier.',
+      5:'Partner was previously active but is now inactive.'
+    }[tier];
+    tierBlock.innerHTML = `<div class="tier-badge ${ti2.cls}" style="display:inline-block;margin-bottom:8px">${ti2.label}</div>
+      <p style="font-size:13px;color:var(--text-secondary)">${tierDesc}</p>`;
+  }
+
+  // Tab 4: Summary
+  buildSummary(d, rev, ippResult, tier, dims, weighted, maxScore, scorePct);
+}
+
+function buildSummary(d, rev, ippResult, tier, dims, weighted, maxScore, scorePct) {
+  const sg = g('sum-grid');
+  if(!sg) return;
+
+  const ti = TIER_INFO[tier]||TIER_INFO[4];
+  const ippText = {
+    'high':'High priority',
+    'medium':'Medium priority',
+    'low':'Low priority — nurture',
+    'incompatible':'Likely incompatible',
+    null:'Pending'
+  }[ippResult] || 'Pending';
+  const scoreDisplay = dims.some(d=>d.score>0) ? ` (${scorePct}% · ${weighted}/${maxScore}pts)` : '';
+
+  sg.innerHTML = `
+    <div class="summary-card"><div class="summary-label">Partner</div><div class="summary-val">${d.name||'—'}</div><div class="summary-sub">PDM: ${d.pdm||'—'}</div></div>
+    <div class="summary-card"><div class="summary-label">Segment</div><div class="summary-val">${SEGL[d.seg]||'—'}</div><div class="summary-sub">${{physical:'Physical Goods',digital:'Digital Goods',both:'Both'}[d.vert]||'—'}</div></div>
+    <div class="summary-card"><div class="summary-label">Annual Revenue Potential</div><div class="summary-val">${rev?'€'+rev.annual.toLocaleString():'—'}</div><div class="summary-sub">${rev?`${rev.refs} refs/mo × €${rev.deal.toLocaleString()} × ${Math.round(rev.conv*100)}% conv`:''}</div></div>
+    <div class="summary-card"><div class="summary-label">Suggested Tier</div><div class="summary-val">${ti.label}</div><div class="summary-sub">IPP: ${ippText}${scoreDisplay}</div></div>`;
+
+  g('sum-ipp').innerHTML = `<table class="ipp-table"><thead><tr><th>Dimension</th><th>Score</th><th>Weight</th><th>Points</th></tr></thead><tbody>
+    ${dims.map(dim=>`<tr><td>${dim.dim}</td><td>${chip(dim.score)}</td><td>×${dim.weight}</td><td style="font-weight:500">${dim.score?dim.score*dim.weight+' / '+3*dim.weight:'—'}</td></tr>`).join('')}
+    <tr style="background:var(--lgrey)"><td colspan="3"><strong>Weighted total</strong></td><td><strong>${weighted} / ${maxScore} (${scorePct}%)</strong></td></tr>
+    </tbody></table>`;
+
+  // HubSpot fields
+  const refsLabel = {31:'31+ / month', 16:'16–30 / month', 6:'6–15 / month', 1:'0–5 / month'}[d.drefs] || '';
+  const sizeLabel = {5:'5,001+', 4:'1,001–5,000', 3:'251–1,000', 2:'101–250', 1:'0–100'}[d.size] || '';
+  const dealLabel = {12000:'€10K+', 7500:'€5K–€10K', 3500:'€2K–€5K'}[d.deal] || '';
+  const refsScore = d.drefs >= 16 ? 3 : d.drefs >= 6 ? 2 : d.drefs >= 1 ? 1 : 0;
+  const sizeScore2 = d.size >= 4 ? 3 : d.size === 3 ? 2 : d.size > 0 ? 1 : 0;
+  const ippStatus = {high:'High priority',medium:'Medium priority',low:'Low priority — nurture',incompatible:'Likely incompatible'}[ippResult] || '';
+  const hsFields = [
+    ['Partner Segment',               SEGL[d.seg] || ''],
+    ['Partner Vertical',              {physical:'Physical Goods', digital:'Digital Goods', both:'Both'}[d.vert] || ''],
+    ['Client Base Size (TAM)',        sizeLabel],
+    ['Referral Capacity',             refsLabel],
+    ['Average Deal Size',             dealLabel],
+    ['IPP 1 — ICP Match',             d.icp   ? IPP_L[d.icp]   : ''],
+    ['IPP 2 — Client Base Size',      sizeScore2 ? IPP_L[sizeScore2] : ''],
+    ['IPP 3 — VAT Fit',               d.vat   ? IPP_L[d.vat]   : ''],
+    ['IPP 4 — Referral Capacity',     refsScore  ? IPP_L[refsScore] : ''],
+    ['IPP 5 — Competitive',           d.comp  ? IPP_L[d.comp]  : ''],
+    ['IPP Priority',                  ippStatus + (dims.some(x=>x.score>0)?` (${scorePct}% weighted)`:'' )],
+    ['Annual Revenue Potential',      rev ? '€'+rev.annual.toLocaleString() : ''],
+    ['Partner Tier',                  ti.label],
+    ['Forecasting',                   d.activ || ''],
+  ];
+  g('sum-hs').innerHTML = `<thead><tr><th>HubSpot field</th><th>Value to enter</th></tr></thead><tbody>
+    ${hsFields.map(([l,v])=>`<tr><td style="color:var(--text-secondary)">${l}</td><td><strong>${v||'<span style="color:var(--text-tertiary)">—</span>'}</strong></td></tr>`).join('')}
+    </tbody>`;
+
+  // Pricing summary
+  const total = g('pt-total')?.textContent;
+  const selectedJ = JURISDICTIONS.filter((_,i)=>g(`j-${i}`)?.checked).map(j=>j.name);
+  g('sum-price').innerHTML = selectedJ.length
+    ? `<p style="font-size:13px;color:var(--text-secondary);margin-bottom:8px">Jurisdictions: ${selectedJ.join(', ')}</p><p style="font-size:18px;font-weight:700;color:var(--navy)">Estimated Year 1 cost: ${total||'—'}</p>`
+    : `<p style="font-size:13px;color:var(--text-tertiary)">No pricing scenario calculated — use tab 4 to build one.</p>`;
+}
+
+// ── Tab navigation ───────────────────────────────────────────
+function goTab(n) {
+  document.querySelectorAll('.pane').forEach((p,i)=>p.classList.toggle('active',i===n));
+  document.querySelectorAll('.tab').forEach((t,i)=>{
+    t.classList.remove('active','done');
+    if(i===n) t.classList.add('active');
+    else if(i<n) t.classList.add('done');
+  });
+  if(n===4) upd();
+}
+
+// ── Init ─────────────────────────────────────────────────────
+buildJurisGrid();
+upd();
+const now = new Date();
+g('hdr-date').textContent = now.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+</script>
+</body>
+</html>
